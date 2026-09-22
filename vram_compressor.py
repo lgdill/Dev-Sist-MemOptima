@@ -443,7 +443,7 @@ class VirtualMemoryApp:
         fs_btn = tk.Button(row, text="⛶", font=("Segoe UI", 12), fg=GRY, bg=BG, bd=0, cursor="hand2", command=self.toggle_fullscreen, activebackground=BG, activeforeground=WHT)
         fs_btn.pack(side="left", padx=(10, 0), pady=(12, 0))
 
-        tk.Label(f, text="Otimizador de Memória Virtual (Pagefile/Swap)", font=("Segoe UI", 9), fg=GRY, bg=BG).pack()
+        tk.Label(f, text="Monitoramento do Arquivo de Paginação (Swap / Disco)", font=("Segoe UI", 9), fg=GRY, bg=BG).pack()
 
         if not IS_ADMIN:
             tk.Label(f, text="Execute como Administrador para purgar a Standby List", font=("Segoe UI", 8), fg=WARN, bg=BG).pack(pady=(2, 0))
@@ -462,7 +462,7 @@ class VirtualMemoryApp:
         right = tk.Frame(inn, bg=CARD)
         right.pack(side="left", padx=(18, 0), fill="y", expand=True)
 
-        tk.Label(right, text="Memória Virtual (Pagefile/Swap)", font=("Segoe UI", 11, "bold"), fg=NEON, bg=CARD).pack(anchor="w")
+        tk.Label(right, text="Arquivo de Paginação (Swap no Disco)", font=("Segoe UI", 11, "bold"), fg=NEON, bg=CARD).pack(anchor="w")
 
         self.lbl_used  = self._stat_row(right, "Usado :")
         self.lbl_free  = self._stat_row(right, "Livre :")
