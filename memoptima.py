@@ -51,7 +51,7 @@ _SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 _CONFIG_FILE = os.path.join(_SCRIPT_DIR, "config.json")
 
 _DEFAULT_CONFIG = {
-    "limit_gb":      2.0,
+    "limit_gb":      4.0,
     "interval_sec":  60,
     "auto_mode":     True,
     "use_filecache": True,
@@ -478,6 +478,7 @@ class OptimizationEngine:
         self._callbacks     = []
         self._last_ts       = 0.0
         self._privs_enabled = False
+        self._last_pf       = {}
 
         # Enable privileges immediately
         _enable_privileges()
@@ -568,10 +569,10 @@ class OptimizationEngine:
         # ── Check Swap Lock (4GB Limit Safety) ────────────────────────────────────
         swap = psutil.swap_memory()
         swap_gb = swap.used / (1024 ** 3)
-        is_swap_safe = (swap_gb < 3.4)
+        is_swap_safe = (swap_gb < 4.0)
 
         if not is_swap_safe:
-            layers.append("⚠ Swap Lock (>3.4GB)")
+            layers.append("⚠ Swap Lock (>4.0GB)")
 
         # ── Detect foreground process PID (Foreground Protection) ──────────────
         fg_pid = _get_foreground_pid()
@@ -589,9 +590,11 @@ class OptimizationEngine:
         # ── Layer 2b: Per-Process Smart Trim ─────────────────────────────────────
         # v3.1: Skip processes that are actively running (CPU > 2%),
         #       the foreground window process, and whitelisted processes.
+        #       Also skips processes with high page faults to avoid thrashing.
         if is_swap_safe:
             trimmed = 0
-            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            current_pf = {}
+            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
                 try:
                     pid  = proc.info['pid']
                     name = (proc.info['name'] or "").lower()
@@ -613,6 +616,16 @@ class OptimizationEngine:
                     if cpu > 2.0:
                         skipped += 1
                         continue
+                        
+                    # v3.1: Thrashing Protection — don't trim if it's actively paging in
+                    mem_info = proc.info.get('memory_info')
+                    if mem_info:
+                        pf = getattr(mem_info, 'num_page_faults', 0)
+                        current_pf[pid] = pf
+                        last_pf = self._last_pf.get(pid, pf)
+                        if (pf - last_pf) > 1000:
+                            skipped += 1
+                            continue
 
                     handle = _OpenProcess(PROC_ACCESS, False, pid)
                     if handle:
@@ -624,6 +637,8 @@ class OptimizationEngine:
                         cleaned += 1
                 except Exception:
                     continue
+            
+            self._last_pf = current_pf
             if trimmed > 0 or skipped > 0:
                 layers.append("L2b: Trim({}) Skip({})".format(trimmed, skipped))
 

@@ -28,7 +28,7 @@ O **MemOptima v3 ULTIMATE** é um otimizador de memória RAM avançado para Wind
 
 ### Principais Funcionalidades (v3.1)
 
-- **Motor de 7 camadas Smart** que poupa processos ativos, o aplicativo em primeiro plano e processos na whitelist
+- **Motor de 7 camadas Smart** que poupa processos ativos (CPU e anti-thrashing/page faults), o aplicativo em primeiro plano e processos na whitelist
 - **Auto-Modo Adaptativo** que ajusta o intervalo dinamicamente com base na pressão da RAM
 - **Notificações Toast** nativas do Windows quando otimiza em segundo plano (tray)
 - **Lista de Processos Agrupados** para melhor visualização, com menu de contexto para proteção (Whitelist)
@@ -151,7 +151,7 @@ Camada │ API Usada                             │ Admin? │ Descrição
        │ (ntdll)                               │        │ os processos no sistema
 ───────┼───────────────────────────────────────┼────────┼──────────────────────────────────
   L2b  │ EmptyWorkingSet (psapi) +             │ Não*   │ Smart Trim per-process: pula app
-       │ SetProcessWorkingSetSizeEx (kernel32)  │        │ ativo, CPU > 2% e whitelisted.
+       │ SetProcessWorkingSetSizeEx (kernel32)  │        │ ativo, CPU > 2%, whitelisted e thrashing (Page Faults).
 ───────┼───────────────────────────────────────┼────────┼──────────────────────────────────
   L4   │ NtSetSystemInformation(MemPurge       │  Sim   │ Purga a Standby List do kernel
        │ StandbyList) (ntdll)                   │        │ (libera cache de disco da RAM)
@@ -170,7 +170,7 @@ Camada │ API Usada                             │ Admin? │ Descrição
 
 ### Proteção de Swap (Swap Lock)
 
-O motor verifica o uso de swap antes de cada otimização. Se o swap ultrapassar **3.4 GB**, as camadas de trim agressivo são **bloqueadas** para evitar que o sistema entre em thrashing (paginação excessiva).
+O motor verifica o uso de swap antes de cada otimização. Se o swap ultrapassar **4.0 GB**, as camadas de trim agressivo são **bloqueadas** para evitar que o sistema entre em thrashing (paginação excessiva).
 
 ### Processos Protegidos (Nunca Tocados)
 
@@ -189,7 +189,7 @@ SYSTEM_PROCS = {
 ```
 optimize_now() → Thread → _run("manual") → _do_optimize()
                                 │
-                                ├─ Verificar Swap Lock (> 3.4 GB?)
+                                ├─ Verificar Swap Lock (> 4.0 GB?)
                                 ├─ Layer 1:  NtSetSystemInformation (SystemEmptyWS)    [Admin]
                                 ├─ Layer 2b: EmptyWorkingSet + SetWSEx por processo     [Todos]
                                 ├─ Layer 4:  NtSetSystemInformation (PurgeStandby)      [Admin]
@@ -441,7 +441,8 @@ Para executar como Administrador:
 ## 🔒 Segurança e Proteções
 
 1. **Lista de processos críticos** — 19 processos do sistema são sempre ignorados
-2. **Swap Lock** — Se swap > 3.4 GB, trim agressivo é bloqueado
+2. **Swap Lock** — Se swap > 4.0 GB, trim agressivo é bloqueado
+3. **Anti-Thrashing** — Não comprime a RAM de processos com saltos bruscos em page faults, evitando loop I/O.
 3. **Tratamento silencioso** — `AccessDenied` e `NoSuchProcess` são capturados sem travar o app
 4. **Thread-safety** — Toda comunicação Engine → GUI passa por `root.after(0, ...)`
 5. **Daemon threads** — Todas as threads são daemon (morrem com o processo principal)
