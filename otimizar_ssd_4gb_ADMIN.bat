@@ -21,7 +21,7 @@ echo [2/3] Desativando gerenciamento automatico do pagefile...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$cs = Get-WmiObject Win32_ComputerSystem; $cs.AutomaticManagedPagefile = $false; $cs.Put(); Write-Host 'OK: AutomaticManagedPagefile = False'"
 
 echo.
-echo [3/3] Fixando pagefile.sys no C: em exatos 4096 MB (4 GB)...
+echo [3/4] Fixando pagefile.sys no C: em exatos 4096 MB (4 GB)...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "
 $pagefiles = Get-WmiObject Win32_PageFileSetting
 if ($pagefiles) {
@@ -33,11 +33,16 @@ Set-WmiInstance -Class Win32_PageFileSetting -Arguments @{Name='C:\pagefile.sys'
 Write-Host 'OK: Pagefile travado em 4 GB (Evita fragmentacao no SSD)'
 "
 
+echo [4/4] Agendando restauracao automatica para a proxima reinicializacao...
+schtasks /create /tn "MemOptimaRestore" /tr "powershell.exe -WindowStyle Hidden -NoProfile -Command \"$cs = Get-WmiObject Win32_ComputerSystem; $cs.AutomaticManagedPagefile = $true; $cs.Put(); Unregister-ScheduledTask -TaskName 'MemOptimaRestore' -Confirm:$false\"" /sc onstart /ru SYSTEM /rl HIGHEST /f >nul 2>&1
+echo OK: O limite de 4GB sera revertido automaticamente apos esta sessao (temporario).
+
 echo.
 echo =====================================================
 echo  PRONTO! Reinicie o computador para aplicar.
 echo  Apos reiniciar, o Windows estara travado em 4GB
-echo  de memoria virtual e o SSD estara otimizado.
+echo  apenas durante AQUELA sessao. Na proxima vez que 
+echo  reiniciar, voltara ao normal automaticamente!
 echo =====================================================
 echo.
 pause
