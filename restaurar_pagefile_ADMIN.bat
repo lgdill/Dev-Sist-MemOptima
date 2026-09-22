@@ -13,13 +13,13 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/2] Restaurando gerenciamento automatico do pagefile...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$cs = Get-WmiObject Win32_ComputerSystem; $cs.AutomaticManagedPagefile = $true; $cs.Put(); Write-Host 'OK: AutomaticManagedPagefile = True'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$true}; Write-Host 'OK: AutomaticManagedPagefile = True'"
 
 echo [2/2] Configurando pagefile padrao no C: (caso necessario)...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "
-$existing = Get-WmiObject Win32_PageFileSetting
+$existing = Get-CimInstance Win32_PageFileSetting
 if (-not $existing) {
-    Set-WmiInstance -Class Win32_PageFileSetting -Arguments @{Name='C:\pagefile.sys'; InitialSize=0; MaximumSize=0}
+    New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys'; InitialSize=0; MaximumSize=0} | Out-Null
     Write-Host 'OK: PageFileSetting criado (gerenciado automaticamente)'
 } else {
     Write-Host 'OK: PageFileSetting ja existe'

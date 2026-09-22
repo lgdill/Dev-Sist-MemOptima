@@ -18,7 +18,7 @@ if %errorLevel% == 0 (
 
 echo.
 echo Restaurando configuracoes de memoria virtual (Pagefile)...
-wmic computersystem where name="%computername%" set AutomaticManagedPagefile=True
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$true}"
 
 echo.
 echo ===================================================
