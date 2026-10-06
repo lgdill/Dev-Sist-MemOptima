@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# PyInstaller output
+dist/
+build/
+*.spec
+
+# Config local (não commitar configurações pessoais)
+# Para defaults, use config.example.json
+config.json
+
+# Logs persistidos localmente
+optimization_log.jsonl
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temp / OS
+*.tmp
+*.bak

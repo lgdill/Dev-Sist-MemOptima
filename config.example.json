@@ -1,0 +1,11 @@
+{
+  "limit_gb": 4.0,
+  "interval_sec": 60,
+  "auto_mode": true,
+  "use_filecache": true,
+  "whitelist": [],
+  "start_with_windows": false,
+  "vram_limit_gb": 4.0,
+  "vram_interval_sec": 60,
+  "vram_auto_mode": false
+}

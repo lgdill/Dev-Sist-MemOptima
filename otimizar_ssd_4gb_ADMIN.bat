@@ -22,14 +22,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Co
 
 echo.
 echo [3/4] Fixando pagefile.sys no C: em exatos 4096 MB (4 GB)...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "
-Get-CimInstance Win32_PageFileSetting | Remove-CimInstance
-New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys'; InitialSize=4096; MaximumSize=4096} | Out-Null
-Write-Host 'OK: Pagefile travado em 4 GB (Evita fragmentacao no SSD)'
-"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_PageFileSetting | Remove-CimInstance; New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys'; InitialSize=4096; MaximumSize=4096} | Out-Null; Write-Host 'OK: Pagefile travado em 4 GB (Evita fragmentacao no SSD)'"
 
 echo [4/4] Agendando restauracao automatica para a proxima reinicializacao...
-schtasks /create /tn "MemOptimaRestore" /tr "powershell.exe -WindowStyle Hidden -NoProfile -Command \"Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$true}; Unregister-ScheduledTask -TaskName 'MemOptimaRestore' -Confirm:$false\"" /sc onstart /ru SYSTEM /rl HIGHEST /f >nul 2>&1
+schtasks /create /tn "MemOptimaRestore" /tr "powershell.exe -WindowStyle Hidden -NoProfile -Command 'Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$true}; Unregister-ScheduledTask -TaskName MemOptimaRestore -Confirm:$false'" /sc onstart /ru SYSTEM /rl HIGHEST /f >nul 2>&1
 echo OK: O limite de 4GB sera revertido automaticamente apos esta sessao (temporario).
 
 echo.

@@ -1,11 +1,11 @@
 @echo off
-title MemOptima v2 — Build .EXE
+title MemOptima v3.2 ULTIMATE — Build .EXE
 color 0A
 
 echo.
-echo  ============================================
-echo   MemOptima v2 BRUTAL — Compilando para .EXE
-echo  ============================================
+echo  ================================================
+echo   MemOptima v3.2 ULTIMATE — Compilando para .EXE
+echo  ================================================
 echo.
 
 :: Instala dependencias
@@ -24,6 +24,7 @@ pyinstaller ^
   --hidden-import=PIL ^
   --hidden-import=PIL.Image ^
   --hidden-import=PIL.ImageDraw ^
+  --add-data "shared;shared" ^
   memoptima.py
 
 echo.
@@ -34,6 +35,9 @@ if exist "dist\MemOptima.exe" (
     echo.
     echo  Para rodar como admin (recomendado):
     echo  Clique direito em MemOptima.exe - Executar como Administrador
+    echo.
+    echo  NOTA: O vram_compressor.py deve estar na mesma pasta do .exe
+    echo        para que o botao "Compressor RAM" funcione corretamente.
 ) else (
     echo  [ERRO] Falha ao gerar o .exe. Verifique os logs acima.
 )
