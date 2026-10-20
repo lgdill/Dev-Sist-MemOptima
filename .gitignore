@@ -18,8 +18,12 @@ build/
 *.spec
 
 # Config local (não commitar configurações pessoais)
-# Para defaults, use config.example.json
+# Para defaults, use config.example.json e .env.example
 config.json
+.env
+*.env
+*.db
+*.sqlite3
 
 # Logs persistidos localmente
 optimization_log.jsonl

@@ -3,7 +3,7 @@
 > **Instituto Federal de Rondônia — Campus Porto Velho Calama**
 > Curso: Desenvolvimento de Sistemas
 > Disciplina: Programar com IA de forma responsável
-> Documento: Spec Inicial — Fase 1
+> Documento: Spec Final — Fase 3 / Entrega Final
 
 ---
 
@@ -248,4 +248,179 @@ O MemOptima não utiliza banco de dados relacional tradicional — os dados são
 
 ---
 
-*MemOptima — Spec Inicial | Instituto Federal de Rondônia — Campus Porto Velho Calama | Setembro/2026*
+## 9. Instalação e Execução
+
+Esta seção descreve todas as etapas para configuração, preparação do banco de dados, variáveis de ambiente e execução do MemOptima em uma máquina nova a partir do repositório clonado.
+
+### 9.1 Ambiente
+
+- **Linguagem e Versão:** Python 3.8 ou superior (testado e homologado no Python 3.12.10 x64).
+- **Ambiente de Execução:** Terminal Windows (PowerShell 5.1/7+ ou Prompt de Comando - CMD), com suporte a ambiente virtual (`.venv`).
+- **Sistema Operacional Testado:** Windows 10 (Build 19045+) e Windows 11 (Build 22631+) x64.
+- **Dependências e Comando de Instalação:**
+  ```cmd
+  pip install -r requirements.txt
+  ```
+  *Lista de pacotes instalados:*
+  - `psutil >= 5.9.0` (leitura de telemetria de RAM, Swap e processos)
+  - `pystray >= 0.19.0` (suporte a execução minimizada na bandeja do sistema)
+  - `Pillow >= 10.0.0` (desenho de ícones dinâmicos na bandeja)
+  - `pyinstaller >= 6.0.0` (ferramenta para compilação do executável único `.EXE`)
+  - `pytest >= 8.0.0` (execução da suíte de testes unitários)
+
+---
+
+### 9.2 Banco de Dados
+
+O MemOptima utiliza persistência local atômica em arquivos JSON/JSONL para seu motor nativo e disponibiliza suporte a banco de dados relacional via script SQL padronizado.
+
+- **SGBD e Versão:** SQLite 3 (embutido no Python, zero configuração de servidor) ou PostgreSQL 14+ / MySQL 8+.
+- **Nome do Banco de Dados:** `memoptima.db`
+- **Caminho do Script SQL:** [`database/schema.sql`](database/schema.sql)
+- **Como executar o script:**
+  - *Opção A (via Python stdlib - qualquer computador):*
+    ```cmd
+    python -c "import sqlite3; conn = sqlite3.connect('memoptima.db'); conn.executescript(open('database/schema.sql', encoding='utf-8').read()); print('Banco de dados criado com sucesso!')"
+    ```
+  - *Opção B (via SQLite CLI):*
+    ```cmd
+    sqlite3 memoptima.db < database/schema.sql
+    ```
+
+#### Estrutura das Tabelas do Banco de Dados
+
+| Tabela | Campos Principais | Chave Primária (PK) | Relacionamentos (FK) |
+|---|---|---|---|
+| **`usuarios`** | `id`, `nome`, `email`, `senha_hash`, `perfil`, `criado_em` | `id` | — |
+| **`configs`** | `id`, `limit_gb`, `interval_sec`, `auto_mode`, `use_filecache`, `swap_lock_gb`, `start_with_windows`, `atualizado_em` | `id` | — |
+| **`whitelist`** | `id`, `process_name`, `added_by_usuario_id`, `adicionado_em` | `id` | `added_by_usuario_id` → `usuarios.id` |
+| **`optimization_logs`** | `id`, `timestamp`, `trigger_type`, `admin_mode`, `layers_active`, `mb_freed`, `ram_before_gb`, `ram_after_gb`, `swap_lock_active`, `usuario_id` | `id` | `usuario_id` → `usuarios.id` |
+| **`ram_snapshots`** | `id`, `timestamp`, `ram_used_gb`, `ram_free_gb`, `ram_total_gb`, `swap_used_gb` | `id` | — |
+
+- **Dados Iniciais (Seeds):** O arquivo [`database/schema.sql`](database/schema.sql) já realiza a inserção automática dos usuários de teste (`admin@memoptima.local` e `rafael@ifro.edu.br`), das configurações padrão (`limit_gb: 4.0`, `auto_mode: 1`) e dos processos essenciais na whitelist (`explorer.exe`, `lsass.exe`, `dwm.exe`).
+
+---
+
+### 9.3 Variáveis de Ambiente
+
+O repositório inclui o arquivo template [`.env.example`](.env.example). Para configurar localmente:
+
+1. Copie o arquivo de exemplo:
+   ```cmd
+   copy .env.example .env
+   ```
+
+2. Tabela de variáveis disponíveis:
+
+| Variável | Descrição | Valor Padrão Local |
+|---|---|---|
+| `APP_ENV` | Define o ambiente (`development`, `production`, `test`) | `development` |
+| `MEMOPTIMA_MODE` | Modo do sistema (`desktop` nativo ou `web_simulator`) | `desktop` |
+| `MEMOPTIMA_LIMIT_GB` | Limite de RAM em GB para disparo automático do Auto-Modo | `4.0` |
+| `MEMOPTIMA_INTERVAL_SEC` | Intervalo em segundos entre checagens do Auto-Modo | `60` |
+| `MEMOPTIMA_AUTO_MODE` | Iniciar com Auto-Modo ativado (`true` / `false`) | `true` |
+| `MEMOPTIMA_USE_FILECACHE`| Ativar limpeza de Standby List / Cache de Arquivos | `true` |
+| `MEMOPTIMA_SWAP_LOCK_GB` | Trava de segurança: bloqueia trim se Swap exceder | `4.0` |
+| `DB_CONNECTION` | Tipo de conexão com banco de dados | `sqlite` |
+| `DB_NAME` | Nome do arquivo ou base de dados | `memoptima.db` |
+| `DB_USER` / `DB_PASS` | Credenciais de acesso ao banco (fictícias de teste) | `memoptima_user` |
+
+> 🔒 **Segurança:** O arquivo `.env` com configurações locais está incluído no `.gitignore` e nunca é enviado ao repositório.
+
+---
+
+### 9.4 Passo a Passo de Instalação e Execução
+
+Siga os passos numerados abaixo em um terminal Windows (CMD ou PowerShell):
+
+1. **Clonar o repositório:**
+   ```cmd
+   git clone https://github.com/lgdill/Dev-Sist-MemOptima.git
+   cd Dev-Sist-MemOptima
+   ```
+
+2. **Criar e ativar o ambiente virtual Python:**
+   ```cmd
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+
+3. **Instalar as dependências do projeto:**
+   ```cmd
+   pip install -r requirements.txt
+   ```
+
+4. **Inicializar o banco de dados local com as tabelas e seeds:**
+   ```cmd
+   python -c "import sqlite3; conn = sqlite3.connect('memoptima.db'); conn.executescript(open('database/schema.sql', encoding='utf-8').read()); print('Banco pronto!')"
+   ```
+
+5. **Copiar o arquivo de variáveis de ambiente:**
+   ```cmd
+   copy .env.example .env
+   ```
+
+6. **Executar o sistema:**
+   - *Modo Administrador (Recomendado - ativa todas as 7 camadas de otimização sem janelas extras de CMD):*
+     ```cmd
+     run_admin.bat
+     ```
+   - *Modo Usuário Comum (ativa camadas de processo L0–L2b):*
+     ```cmd
+     python memoptima.py
+     ```
+   - *Modo Compilado (Gera o executável autônomo .EXE):*
+     ```cmd
+     build.bat
+     ```
+     O executável será gerado em `dist\MemOptima.exe` e pode ser executado em qualquer máquina Windows sem necessidade de Python instalado.
+
+---
+
+### 9.5 Como Testar o Sistema
+
+#### Credenciais de Teste
+- **Administrador:** `admin@memoptima.local` | Senha: `admin123`
+- **Professor / Avaliador:** `rafael@ifro.edu.br` | Senha: `professor123`
+
+#### Roteiro do Fluxo Principal de Testes
+1. **Verificar Telemetria em Tempo Real:**
+   - Ao abrir o MemOptima, observe o gauge circular animado exibindo o percentual de uso de RAM e os rótulos de RAM Usada, Livre e Total atualizados a cada 2 segundos.
+   - Observe a sparkline desenhando o histórico de leituras.
+2. **Executar Otimização Manual:**
+   - Clique no botão **"OTIMIZAR MEMÓRIA AGORA"**.
+   - Observe a barra de progresso e o log de otimizações registrando os MB liberados, as camadas aplicadas e o trigger `MANUAL`.
+3. **Testar Proteção de Whitelist:**
+   - Na lista de processos, clique com o botão direito sobre um processo (ex.: `chrome.exe` ou `notepad.exe`) e selecione **"Adicionar à Whitelist"**.
+   - O processo passará a ser ignorado pelas camadas de esvaziamento de Working Set.
+4. **Testar VirtualRAM Compressor:**
+   - Clique no botão **"🗜 Compressor RAM"** na interface.
+   - O módulo de memória virtual abrirá em processo independente sem janelas pretas de CMD. Clique em "Otimizar Pagefile" para executar Page Combine e Purge Standby.
+5. **Executar a Suíte de Testes Automatizados:**
+   ```cmd
+   pytest tests/ -v
+   ```
+   *Resultado esperado:* 29 testes passando com 100% de sucesso.
+
+#### Problemas Conhecidos e Limitações
+- **Camadas L3 a L6 (Privilégios de Administrador):** As camadas que operam no nível do kernel (`NtSetSystemInformation` e esvaziamento da Standby List global) requerem execução como Administrador (`run_admin.bat`). Em modo usuário comum, o sistema degrada graciosamente aplicando apenas a camada segura de Working Set por processo (L2b).
+- **Compatibilidade:** O núcleo de chamadas `ctypes` é exclusivo para sistemas operacionais Microsoft Windows (x64). Em outros sistemas operacionais, o sistema opera através de mocks ou pelo Simulador Web.
+
+---
+
+### 9.6 Sistema Publicado no Ar (Acesso Online sem Instalação)
+
+Para avaliação imediata por qualquer pessoa sem necessidade de instalar Python ou ambiente local, o MemOptima disponibiliza uma versão completa no ar:
+
+- **URL do Sistema Publicado:** [https://lgdill.github.io/Dev-Sist-MemOptima/](https://lgdill.github.io/Dev-Sist-MemOptima/) *(também compatível com deploy instantâneo na Vercel)*
+- **Recursos do Simulador Online:**
+  - Gauge circular SVG dinâmico em tempo real.
+  - Sparkline animada com histórico contínuo de RAM.
+  - Simulação interativa das 7 camadas de otimização de memória.
+  - Gerenciador interativo de processos com adição/remoção na Whitelist.
+  - VirtualRAM Compressor com purga de Standby List e deduplicação de páginas.
+  - Log de otimizações com persistência em `localStorage`.
+
+---
+
+*MemOptima — Spec Final | Instituto Federal de Rondônia — Campus Porto Velho Calama | 2026*

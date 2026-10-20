@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemOptima — Otimizador de Memória RAM para Windows (Web Simulator)</title>
+    <meta name="description" content="Versão interativa online do MemOptima, otimizador de memória RAM para máquinas com 2-4GB desenvolvido no IFRO - Campus Porto Velho Calama.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060913;
+            --card: #0b1120;
+            --card-inner: #0f172a;
+            --bdr: #1e293b;
+            --neon: #00ffcc;
+            --neon-dim: rgba(0, 255, 204, 0.15);
+            --neon-glow: rgba(0, 255, 204, 0.35);
+            --violet: #a78bfa;
+            --violet-glow: rgba(167, 139, 250, 0.35);
+            --warn: #fbbf24;
+            --red: #f87171;
+            --grn: #34d399;
+            --txt: #f8fafc;
+            --txt-muted: #94a3b8;
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--txt);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(0, 255, 204, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 40%);
+        }
+
+        /* ── Header ────────────────────────────────────────── */
+        header {
+            background: rgba(11, 17, 32, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--bdr);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--neon), #0284c7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 20px;
+            box-shadow: 0 0 15px var(--neon-glow);
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #fff, var(--neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--txt-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-admin {
+            background: var(--neon);
+            color: #060913;
+            box-shadow: 0 0 10px var(--neon-glow);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .badge-live {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--grn);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--grn);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        .btn-github {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--bdr);
+            transition: all 0.2s ease;
+        }
+
+        .btn-github:hover {
+            background: #334155;
+            border-color: var(--neon);
+        }
+
+        /* ── Main Layout ───────────────────────────────────── */
+        main {
+            flex: 1;
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+
+        @media (max-width: 980px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--bdr);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+        }
+
+        .card-title-neon {
+            color: var(--neon);
+        }
+
+        .card-title-violet {
+            color: var(--violet);
+        }
+
+        /* ── Gauge & Stats Section ─────────────────────────── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        @media (max-width: 640px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
+        }
+
+        .gauge-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 14;
+        }
+
+        .gauge-bar {
+            fill: none;
+            stroke: var(--neon);
+            stroke-width: 14;
+            stroke-linecap: round;
+            stroke-dasharray: 565.48;
+            stroke-dashoffset: 200;
+            transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
+            filter: drop-shadow(0 0 8px var(--neon-glow));
+        }
+
+        .gauge-value {
+            position: absolute;
+            text-align: center;
+        }
+
+        .gauge-pct {
+            font-size: 44px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+
+        .gauge-sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--txt-muted);
+            text-transform: uppercase;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-inner);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--txt-muted);
+        }
+
+        .stat-val {
+            font-size: 14px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        /* ── Sparkline Canvas ──────────────────────────────── */
+        .sparkline-wrapper {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sparkline-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--txt-muted);
+            margin-bottom: 8px;
+        }
+
+        canvas#sparkline {
+            width: 100%;
+            height: 64px;
+            background: #080d1a;
+            border-radius: 6px;
+            border: 1px solid var(--bdr);
+        }
+
+        /* ── Action Section ────────────────────────────────── */
+        .action-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .btn-optimize {
+            background: linear-gradient(135deg, var(--neon), #00b4d8);
+            color: #060913;
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            border: none;
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--neon-glow);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-optimize:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.6);
+        }
+
+        .btn-optimize:active {
+            transform: translateY(0);
+        }
+
+        .btn-optimize:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Layers Progress ───────────────────────────────── */
+        .layers-track {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .layer-box {
+            background: #080d1a;
+            border: 1px solid var(--bdr);
+            border-radius: 6px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--txt-muted);
+            transition: all 0.3s ease;
+        }
+
+        .layer-box.active {
+            background: var(--neon);
+            color: #060913;
+            border-color: var(--neon);
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
+
+        /* ── Process List ──────────────────────────────────── */
+        .process-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .process-table th {
+            text-align: left;
+            padding: 10px;
+            color: var(--txt-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--bdr);
+        }
+
+        .process-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        .btn-mini {
+            background: transparent;
+            border: 1px solid var(--bdr);
+            color: var(--txt);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-mini:hover {
+            border-color: var(--neon);
+            color: var(--neon);
+        }
+
+        .btn-whitelisted {
+            border-color: var(--warn);
+            color: var(--warn);
+        }
+
+        /* ── Sidebar Controls ──────────────────────────────── */
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--txt-muted);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #1e293b;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--neon);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #060913;
+        }
+
+        .range-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e293b;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--neon);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
+
+        /* ── Log Container ─────────────────────────────────── */
+        .log-box {
+            background: #080d1a;
+            border: 1px solid var(--bdr);
+            border-radius: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            line-height: 1.4;
+            color: var(--txt-muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            padding-bottom: 4px;
+        }
+
+        .log-time {
+            color: #64748b;
+        }
+
+        .log-tag {
+            color: var(--neon);
+            font-weight: 700;
+        }
+
+        .log-freed {
+            color: var(--grn);
+            font-weight: 700;
+        }
+
+        /* ── Footer ────────────────────────────────────────── */
+        footer {
+            background: #050811;
+            border-top: 1px solid var(--bdr);
+            padding: 20px 24px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--txt-muted);
+            margin-top: auto;
+        }
+
+        footer a {
+            color: var(--neon);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand">
+            <div class="brand-icon">M</div>
+            <div class="brand-text">
+                <h1>MemOptima <span style="font-size:12px; font-weight:400; color:var(--neon)">v3.3 WEB</span></h1>
+                <p>ULTIMATE RAM Optimizer — Smart 7 Layers — Online Simulator</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span class="badge badge-live"><span class="pulse-dot"></span> NO AR</span>
+            <span class="badge badge-admin" id="badgeMode" onclick="toggleAdminMode()" title="Clique para alternar permissão simulada">ADMIN</span>
+            <a href="https://github.com/lgdill/Dev-Sist-MemOptima" target="_blank" class="btn-github">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                GitHub
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Left Column: Monitor and Controls -->
+        <section>
+            <!-- Memory Gauge Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title card-title-neon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Monitor de Memória RAM (Física)
+                    </span>
+                    <span id="txtAdminHint" style="font-size:11px; color:var(--txt-muted);">Modo Administrador: 7 Camadas ativas</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <!-- Gauge -->
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 200 200">
+                            <circle class="gauge-bg" cx="100" cy="100" r="90" />
+                            <circle class="gauge-bar" id="gaugeBar" cx="100" cy="100" r="90" />
+                        </svg>
+                        <div class="gauge-value">
+                            <div class="gauge-pct" id="gaugePct">82%</div>
+                            <div class="gauge-sub">USO DE RAM</div>
+                        </div>
+                    </div>
+
+                    <!-- Numerical stats -->
+                    <div class="stats-list">
+                        <div class="stat-item">
+                            <span class="stat-label">Memória Usada:</span>
+                            <span class="stat-val" id="statUsed" style="color:var(--neon)">3.28 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Memória Livre:</span>
+                            <span class="stat-val" id="statFree">0.72 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Físico (RAM):</span>
+                            <span class="stat-val" id="statTotal">4.00 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pagefile (Swap Virtual):</span>
+                            <span class="stat-val" id="statSwap" style="color:var(--violet)">1.84 GB / 4.00 GB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sparkline Canvas -->
+                <div class="sparkline-wrapper">
+                    <div class="sparkline-header">
+                        <span>Histórico de Uso de RAM (~3 min)</span>
+                        <span id="sparklineStatus">Atualizando a cada 2s</span>
+                    </div>
+                    <canvas id="sparkline" width="600" height="64"></canvas>
+                </div>
+
+                <!-- Optimization Action -->
+                <div class="action-container">
+                    <button class="btn-optimize" id="btnOptimize" onclick="triggerOptimization()">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        OTIMIZAR MEMÓRIA AGORA
+                    </button>
+
+                    <!-- Layers visualization -->
+                    <div class="layers-track">
+                        <div class="layer-box" id="l0">L0<br>Anti-Thrash</div>
+                        <div class="layer-box" id="l1">L1<br>Trim Proc</div>
+                        <div class="layer-box" id="l2">L2<br>EmptySet</div>
+                        <div class="layer-box" id="l3">L3<br>NtSetSys</div>
+                        <div class="layer-box" id="l4">L4<br>Standby</div>
+                        <div class="layer-box" id="l5">L5<br>FileCache</div>
+                        <div class="layer-box" id="l6">L6<br>PageComb</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process Manager Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        Gerenciador de Processos (Simulado)
+                    </span>
+                    <span style="font-size:11px; color:var(--txt-muted);">Proteja processos críticos na Whitelist</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="process-table">
+                        <thead>
+                            <tr>
+                                <th>Processo</th>
+                                <th>PID</th>
+                                <th>Consumo</th>
+                                <th>Whitelist</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                            <!-- Injetado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Settings, VRAM, and Logs -->
+        <aside>
+            <!-- Auto Mode & Config Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title card-title-neon">Configurações</span>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Auto-Modo Adaptativo</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleAuto" checked onchange="toggleAutoMode(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p style="font-size:11px; color:var(--txt-muted)">Dispara otimização automática ao ultrapassar o limite.</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Limite de Disparo: <b id="valLimit" style="color:var(--neon)">80% (3.2 GB)</b></span>
+                    </div>
+                    <input type="range" class="range-slider" id="rangeLimit" min="60" max="95" value="80" oninput="updateLimit(this.value)">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Swap Lock de Segurança: <b style="color:var(--warn)">4.0 GB</b></span>
+                    </div>
+                    <p style="font-size:11px; color:var(--txt-muted)">Bloqueia camadas agressivas caso o Swap atinja este valor.</p>
+                </div>
+            </div>
+
+            <!-- VirtualRAM Compressor Card -->
+            <div class="card" style="border-color: rgba(167, 139, 250, 0.3);">
+                <div class="card-header">
+                    <span class="card-title card-title-violet">
+                        🗜 VirtualRAM Compressor
+                    </span>
+                    <span class="badge" style="background:var(--violet); color:#060913">v1.2</span>
+                </div>
+                <p style="font-size:12px; color:var(--txt-muted); margin-bottom:14px;">
+                    Módulo independente para despressurizar o Pagefile/Swap com Page Combine e Purge Standby.
+                </p>
+                <button class="btn-optimize" style="background:linear-gradient(135deg, var(--violet), #8b5cf6); padding:10px; font-size:13px;" onclick="triggerVramCompression()">
+                    Despressurizar Swap Agora
+                </button>
+            </div>
+
+            <!-- Optimization History Log -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Log de Otimizações</span>
+                    <button class="btn-mini" onclick="clearLogs()">Limpar</button>
+                </div>
+                <div class="log-box" id="logContainer">
+                    <!-- Injetado via JS -->
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>
+            <strong>MemOptima</strong> — Instituto Federal de Rondônia (IFRO) — Campus Porto Velho Calama<br>
+            Curso: Desenvolvimento de Sistemas | Disciplina: <em>Programar com IA de forma responsável</em> | Prof. Rafael Pitwak<br>
+            Repositório oficial: <a href="https://github.com/lgdill/Dev-Sist-MemOptima" target="_blank">github.com/lgdill/Dev-Sist-MemOptima</a>
+        </p>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // State
+        let isAdmin = true;
+        let autoMode = true;
+        let limitPercent = 80;
+        const totalRamGb = 4.0;
+        let currentUsedGb = 3.28;
+        let currentSwapGb = 1.84;
+        let ramHistory = Array(45).fill(75).map(v => v + Math.sin(Math.random() * 5) * 8);
+
+        let processes = [
+            { name: "chrome.exe", pid: 4820, mb: 940, whitelisted: false },
+            { name: "Code.exe (VS Code)", pid: 6112, mb: 680, whitelisted: false },
+            { name: "discord.exe", pid: 7290, mb: 340, whitelisted: false },
+            { name: "spotify.exe", pid: 8104, mb: 220, whitelisted: false },
+            { name: "explorer.exe", pid: 1400, mb: 160, whitelisted: true },
+            { name: "lsass.exe", pid: 890, mb: 45, whitelisted: true },
+            { name: "MemOptima.exe", pid: 9044, mb: 12, whitelisted: true }
+        ];
+
+        let logs = JSON.parse(localStorage.getItem("memoptima_web_logs")) || [
+            { time: "10:15:30", trigger: "MANUAL", freed: "438.5 MB", layers: "L0, L1, L2, L4" },
+            { time: "11:20:00", trigger: "AUTO", freed: "212.1 MB", layers: "L0, L1, L2" }
+        ];
+
+        // Init
+        document.addEventListener("DOMContentLoaded", () => {
+            renderProcesses();
+            renderLogs();
+            initSparkline();
+            setInterval(updateTick, 2000);
+        });
+
+        // Tick loop
+        function updateTick() {
+            // Flutuação natural
+            const delta = (Math.random() - 0.45) * 0.08;
+            currentUsedGb = Math.max(1.8, Math.min(3.85, currentUsedGb + delta));
+            const pct = Math.round((currentUsedGb / totalRamGb) * 100);
+
+            // Update gauge
+            document.getElementById("gaugePct").innerText = `${pct}%`;
+            document.getElementById("statUsed").innerText = `${currentUsedGb.toFixed(2)} GB`;
+            document.getElementById("statFree").innerText = `${(totalRamGb - currentUsedGb).toFixed(2)} GB`;
+            
+            // Circumference: 2 * PI * 90 = 565.48
+            const offset = 565.48 - (565.48 * (pct / 100));
+            const bar = document.getElementById("gaugeBar");
+            bar.style.strokeDashoffset = offset;
+
+            if (pct >= 85) bar.style.stroke = "var(--red)";
+            else if (pct >= 75) bar.style.stroke = "var(--warn)";
+            else bar.style.stroke = "var(--neon)";
+
+            // Update sparkline
+            ramHistory.push(pct);
+            if (ramHistory.length > 50) ramHistory.shift();
+            drawSparkline();
+
+            // Auto mode check
+            if (autoMode && pct >= limitPercent) {
+                console.log("Auto-Mode triggered!");
+                triggerOptimization(true);
+            }
+        }
+
+        // Optimization Action
+        function triggerOptimization(isAuto = false) {
+            const btn = document.getElementById("btnOptimize");
+            btn.disabled = true;
+            btn.innerText = "OTIMIZANDO EM ANDAMENTO...";
+
+            const activeLayers = isAdmin ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2];
+            let idx = 0;
+
+            const interval = setInterval(() => {
+                if (idx > 0) document.getElementById(`l${activeLayers[idx - 1]}`).classList.remove("active");
+                if (idx < activeLayers.length) {
+                    document.getElementById(`l${activeLayers[idx]}`).classList.add("active");
+                    idx++;
+                } else {
+                    clearInterval(interval);
+                    // Finish
+                    setTimeout(() => {
+                        activeLayers.forEach(l => document.getElementById(`l${l}`).classList.remove("active"));
+                        btn.disabled = false;
+                        btn.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> OTIMIZAR MEMÓRIA AGORA`;
+                        
+                        // Liberar memória
+                        const freedMb = Math.round(isAdmin ? (350 + Math.random() * 250) : (120 + Math.random() * 80));
+                        currentUsedGb = Math.max(1.6, currentUsedGb - (freedMb / 1024));
+                        updateTick();
+
+                        // Trim processes
+                        processes.forEach(p => {
+                            if (!p.whitelisted && p.mb > 60) {
+                                p.mb = Math.round(p.mb * 0.65);
+                            }
+                        });
+                        renderProcesses();
+
+                        // Log
+                        const now = new Date();
+                        const timeStr = now.toTimeString().split(' ')[0];
+                        logs.unshift({
+                            time: timeStr,
+                            trigger: isAuto ? "AUTO" : "MANUAL",
+                            freed: `${freedMb} MB`,
+                            layers: isAdmin ? "L0 a L6 (Admin)" : "L0 a L2 (User)"
+                        });
+                        if (logs.length > 20) logs.pop();
+                        localStorage.setItem("memoptima_web_logs", JSON.stringify(logs));
+                        renderLogs();
+                    }, 400);
+                }
+            }, 250);
+        }
+
+        // VirtualRAM Compressor Action
+        function triggerVramCompression() {
+            currentSwapGb = Math.max(1.1, currentSwapGb - 0.45);
+            document.getElementById("statSwap").innerText = `${currentSwapGb.toFixed(2)} GB / 4.00 GB`;
+            const now = new Date();
+            logs.unshift({
+                time: now.toTimeString().split(' ')[0],
+                trigger: "VRAM",
+                freed: "460 MB Swap",
+                layers: "C1: PageCombine, C2: PurgeStandby"
+            });
+            renderLogs();
+            alert("VirtualRAM Compressor: Standby purgado e páginas deduplicadas! Pressão no Pagefile reduzida com sucesso.");
+        }
+
+        // Sparkline Canvas
+        function initSparkline() {
+            drawSparkline();
+        }
+
+        function drawSparkline() {
+            const canvas = document.getElementById("sparkline");
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, w, h);
+
+            if (ramHistory.length < 2) return;
+
+            const step = w / (ramHistory.length - 1);
+            ctx.beginPath();
+            ctx.moveTo(0, h - (ramHistory[0] / 100) * h);
+
+            for (let i = 1; i < ramHistory.length; i++) {
+                const x = i * step;
+                const y = h - (ramHistory[i] / 100) * h;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.strokeStyle = "#00ffcc";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Fill area
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, "rgba(0, 255, 204, 0.25)");
+            grad.addColorStop(1, "rgba(0, 255, 204, 0.0)");
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        // Process table render
+        function renderProcesses() {
+            const tbody = document.getElementById("processTableBody");
+            tbody.innerHTML = processes.map((p, idx) => `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td style="color:#64748b">${p.pid}</td>
+                    <td style="color:${p.mb > 500 ? 'var(--warn)' : 'var(--neon)'}">${p.mb} MB</td>
+                    <td>
+                        <button class="btn-mini ${p.whitelisted ? 'btn-whitelisted' : ''}" onclick="toggleWhitelist(${idx})">
+                            ${p.whitelisted ? '🛡 Protegido' : '+ Adicionar'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn-mini" onclick="trimSingleProcess(${idx})">Limpar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleWhitelist(idx) {
+            processes[idx].whitelisted = !processes[idx].whitelisted;
+            renderProcesses();
+        }
+
+        function trimSingleProcess(idx) {
+            if (processes[idx].whitelisted) {
+                alert(`O processo ${processes[idx].name} está protegido na Whitelist!`);
+                return;
+            }
+            const freed = Math.round(processes[idx].mb * 0.4);
+            processes[idx].mb -= freed;
+            currentUsedGb = Math.max(1.6, currentUsedGb - (freed / 1024));
+            renderProcesses();
+            updateTick();
+        }
+
+        // Logs render
+        function renderLogs() {
+            const container = document.getElementById("logContainer");
+            container.innerHTML = logs.map(l => `
+                <div class="log-entry">
+                    <span class="log-time">[${l.time}]</span>
+                    <span class="log-tag">${l.trigger}</span>
+                    <span class="log-freed">-${l.freed}</span>
+                    <span style="color:#cbd5e1">| ${l.layers}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearLogs() {
+            logs = [];
+            localStorage.removeItem("memoptima_web_logs");
+            renderLogs();
+        }
+
+        // Toggle admin
+        function toggleAdminMode() {
+            isAdmin = !isAdmin;
+            const b = document.getElementById("badgeMode");
+            const hint = document.getElementById("txtAdminHint");
+            if (isAdmin) {
+                b.innerText = "ADMIN";
+                b.className = "badge badge-admin";
+                hint.innerText = "Modo Administrador: 7 Camadas ativas (L0 a L6)";
+            } else {
+                b.innerText = "USER";
+                b.className = "badge";
+                b.style.background = "#e2e8f0";
+                b.style.color = "#060913";
+                hint.innerText = "Modo Usuário: Camadas seguras de processo ativas (L0 a L2b)";
+            }
+        }
+
+        function toggleAutoMode(val) {
+            autoMode = val;
+        }
+
+        function updateLimit(val) {
+            limitPercent = parseInt(val);
+            const gb = (totalRamGb * (limitPercent / 100)).toFixed(1);
+            document.getElementById("valLimit").innerText = `${limitPercent}% (${gb} GB)`;
+        }
+    </script>
+</body>
+</html>

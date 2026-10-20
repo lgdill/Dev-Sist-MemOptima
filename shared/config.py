@@ -29,6 +29,7 @@ _DEFAULT_CONFIG = {
     "use_filecache":      True,
     "whitelist":          [],
     "start_with_windows": False,
+    "swap_lock_gb":       4.0,   # [FIX v3.3] limite do Swap Lock (configurável)
     # — Módulo VRAM Compressor —
     "vram_limit_gb":      4.0,
     "vram_interval_sec":  60,

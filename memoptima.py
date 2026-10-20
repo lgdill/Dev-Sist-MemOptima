@@ -114,6 +114,8 @@ class OptimizationEngine:
         self.auto_mode      = config.get("auto_mode", True)
         self.use_filecache  = config.get("use_filecache", True)
         self.whitelist      = set(config.get("whitelist", []))
+        # [FIX v3.3] swap_lock_gb agora lido do config (antes era hardcoded como 4.0)
+        self.swap_lock_gb   = float(config.get("swap_lock_gb", 4.0))
 
         self.total_freed_mb  = 0.0
         self.total_runs      = 0
@@ -139,6 +141,7 @@ class OptimizationEngine:
             "auto_mode":     self.auto_mode,
             "use_filecache": self.use_filecache,
             "whitelist":     sorted(list(self.whitelist)),
+            "swap_lock_gb":  self.swap_lock_gb,   # [FIX v3.3] persiste junto com as demais configs
         }
 
     def register_callback(self, cb) -> None:
@@ -220,9 +223,10 @@ class OptimizationEngine:
         # ── Swap Lock safety ────────────────────────────────────────────────
         swap         = psutil.swap_memory()
         swap_gb      = swap.used / (1024 ** 3)
-        is_swap_safe = (swap_gb < 4.0)
+        # [FIX v3.3] usa self.swap_lock_gb (configurável) em vez de 4.0 fixo
+        is_swap_safe = (swap_gb < self.swap_lock_gb)
         if not is_swap_safe:
-            layers.append("⚠ Swap Lock (>4.0GB)")
+            layers.append("⚠ Swap Lock (>{:.1f}GB)".format(self.swap_lock_gb))
 
         # ── Foreground PID ──────────────────────────────────────────────────
         fg_pid = _get_foreground_pid()
@@ -390,8 +394,7 @@ class MemOptimaApp:
         return "break"
 
     def _on_close(self) -> None:
-        """[FIX] Comportamento consistente: sempre pergunta antes de fechar ou minimizar."""
-        self._persist_config()
+        """[FIX v3.3] Comportamento consistente: persiste config SOMENTE se o usuário confirmar."""
         if self._tray:
             # Com tray disponível — oferecer escolha
             result = messagebox.askyesnocancel(
@@ -402,12 +405,15 @@ class MemOptimaApp:
                 "• Cancelar → Voltar"
             )
             if result is True:
+                self._persist_config()  # [FIX] só persiste ao confirmar
                 self.root.withdraw()
             elif result is False:
+                self._persist_config()  # [FIX] só persiste ao confirmar
                 self._exit()
-            # None (cancelar) → não faz nada
+            # None (cancelar) → não faz nada, não persiste
         else:
             if messagebox.askyesno("Sair", "Encerrar o MemOptima?\nO monitoramento será interrompido."):
+                self._persist_config()  # [FIX] só persiste ao confirmar
                 self._exit()
 
     def _exit(self) -> None:
@@ -436,17 +442,31 @@ class MemOptimaApp:
         self.root.focus_force()
 
     def _launch_vram_compressor(self) -> None:
+        is_frozen = getattr(sys, "frozen", False)
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        compressor = os.path.join(script_dir, "vram_compressor.py")
-        if not os.path.exists(compressor):
-            messagebox.showerror("VirtualRAM Compressor",
-                                 "Arquivo 'vram_compressor.py' não encontrado em:\n{}".format(script_dir))
-            return
+
+        if is_frozen:
+            cmd = [sys.executable, "--vram-compressor"]
+        else:
+            compressor = os.path.join(script_dir, "vram_compressor.py")
+            if not os.path.exists(compressor):
+                messagebox.showerror("VirtualRAM Compressor",
+                                     "Arquivo 'vram_compressor.py' não encontrado em:\n{}".format(script_dir))
+                return
+            exe = sys.executable
+            # Prefere pythonw.exe para evitar janela preta de console
+            if exe.lower().endswith("python.exe"):
+                w_exe = exe[:-10] + "pythonw.exe"
+                if os.path.exists(w_exe):
+                    exe = w_exe
+            cmd = [exe, compressor]
+
         try:
+            flags = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
             subprocess.Popen(
-                [sys.executable, compressor],
+                cmd,
                 cwd=script_dir,
-                creationflags=subprocess.CREATE_NEW_CONSOLE if IS_WINDOWS else 0,
+                creationflags=flags,
             )
         except Exception as ex:
             messagebox.showerror("VirtualRAM Compressor",
@@ -1078,6 +1098,10 @@ class MemOptimaApp:
         if not entries:
             return
 
+        # [FIX v3.3] fmt() definida fora do loop para não ser recriada a cada iteração
+        def fmt(mb: float) -> str:
+            return "{:.2f}GB".format(mb / 1024) if mb >= 1024 else "{:.0f}MB".format(mb)
+
         self.txt_hist.config(state="normal")
         for entry in entries:
             try:
@@ -1088,9 +1112,6 @@ class MemOptimaApp:
                 cleaned = entry.get("cleaned", 0)
                 skipped = entry.get("skipped", 0)
                 layers  = entry.get("layers", [])
-
-                def fmt(mb):
-                    return "{:.2f}GB".format(mb / 1024) if mb >= 1024 else "{:.0f}MB".format(mb)
 
                 freed_s   = "-" + fmt(freed)
                 adm_mark  = "★" if adm else " "
@@ -1146,6 +1167,14 @@ def setup_tray(app: MemOptimaApp):
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
 def main() -> None:
+    if "--vram-compressor" in sys.argv:
+        try:
+            import vram_compressor
+            vram_compressor.main()
+        except Exception as e:
+            messagebox.showerror("Erro", "Falha ao iniciar o VirtualRAM Compressor:\n{}".format(e))
+        return
+
     cfg    = load_config()
     engine = OptimizationEngine(cfg)
 
